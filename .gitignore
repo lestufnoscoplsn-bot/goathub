@@ -4,5 +4,5 @@ node_modules/
 server/data/
 .env
 .env.dev
-livekit.yaml
+/livekit.yaml
 backups/
