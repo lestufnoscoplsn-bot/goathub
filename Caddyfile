@@ -1,0 +1,10 @@
+# Le site
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}
+
+# Le serveur vocal (signalisation WebSocket sécurisée)
+livekit.{$DOMAIN} {
+	reverse_proxy livekit:7880
+}

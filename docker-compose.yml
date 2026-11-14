@@ -1,0 +1,70 @@
+# GoatHub en production sur un serveur (VPS) : tout démarre avec « docker compose up -d --build ».
+# Les réglages et secrets sont dans le fichier .env (créé par ./installer.sh).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: goathub
+      POSTGRES_USER: goathub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goathub"]
+      interval: 5s
+      retries: 10
+    # Aucun port ouvert vers l'extérieur : seule l'application peut parler à la base
+
+  livekit:
+    image: livekit/livekit-server:v1.9
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    volumes: [./livekit.yaml:/etc/livekit.yaml:ro]
+    ports:
+      - "7881:7881/tcp"                 # audio/vidéo en TCP (si l'UDP est bloqué)
+      - "3478:3478/udp"                 # serveur TURN intégré (traverse les box et pare-feu)
+      - "50000-50100:50000-50100/udp"   # audio/vidéo en UDP
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://goathub:${POSTGRES_PASSWORD}@postgres:5432/goathub
+      PUBLIC_URL: https://${DOMAIN}
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_PUBLIC_URL: wss://livekit.${DOMAIN}
+      TRUST_PROXY: "1"
+      FORCE_HTTPS: "1"
+    volumes: [appdata:/data]
+
+  caddy:
+    # Serveur web : certificats HTTPS automatiques (Let's Encrypt) pour le site et le vocal
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment: { DOMAIN: "${DOMAIN}" }
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on: [app, livekit]
+
+  backup:
+    # Sauvegarde chiffrée de la base et des fichiers chaque nuit, 14 jours conservés (voir backup/sauvegarde.sh)
+    build: ./backup
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE}
+    volumes:
+      - ./backups:/backups
+      - appdata:/appdata:ro
+
+volumes:
+  pgdata:
+  appdata:
+  caddydata:
