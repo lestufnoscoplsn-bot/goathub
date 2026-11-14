@@ -1,0 +1,45 @@
+# GoatHub sur ton propre ordinateur (pour l'essayer) : lancé par lancer.bat (Windows) ou lancer.sh (Mac/Linux).
+# Adresse : http://localhost:3000
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: goathub
+      POSTGRES_USER: goathub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [pgdata-local:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goathub"]
+      interval: 3s
+      retries: 20
+
+  livekit:
+    image: livekit/livekit-server:v1.9
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    volumes: [./livekit.local.yaml:/etc/livekit.yaml:ro]
+    ports:
+      - "7880:7880"
+      - "7881:7881/tcp"
+      - "50000-50100:50000-50100/udp"
+
+  app:
+    build: .
+    image: goathub-web
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+    env_file: .env.local
+    environment:
+      DATABASE_URL: postgres://goathub:${POSTGRES_PASSWORD}@postgres:5432/goathub
+      PUBLIC_URL: http://localhost:3000
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_PUBLIC_URL: ws://localhost:7880
+      SIGNUPS_PER_HOUR: "50"
+    ports: ["3000:3000"]
+    volumes: [appdata-local:/data]
+
+volumes:
+  pgdata-local:
+  appdata-local:

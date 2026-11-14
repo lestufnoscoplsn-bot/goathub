@@ -8,6 +8,17 @@ Plateforme de communication complète, inspirée de Discord : serveurs, salons t
 - **Vocal / vidéo / partage d'écran** : WebRTC avec le serveur vocal **LiveKit** (SFU)
 - **Mise en ligne** : Docker Compose, avec HTTPS automatique (Caddy) et sauvegardes chiffrées
 
+## Essayer GoatHub sur ton ordinateur (le plus simple)
+
+1. Installe **Docker Desktop** : https://www.docker.com/products/docker-desktop/. Ouvre-le et attends qu'il affiche « Engine running ».
+2. Télécharge le code : sur la page GitHub, bouton vert **Code**, puis **Download ZIP**. Décompresse-le.
+3. **Windows** : double-clique sur **`lancer.bat`**. **Mac / Linux** : lance `./lancer.sh` dans un terminal.
+4. La première fois, patiente quelques minutes. Ensuite, GoatHub s'ouvre tout seul sur **http://localhost:3000**.
+
+Pour l'arrêter : **`arreter.bat`** (Windows), ou `docker compose -f docker-compose.local.yml stop`. Tes comptes et messages sont conservés.
+
+Pour tester à plusieurs sur un seul ordinateur, ouvre une fenêtre de navigation privée et crée un deuxième compte.
+
 ## Fonctionnalités
 
 | | |

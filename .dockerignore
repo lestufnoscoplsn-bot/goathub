@@ -7,3 +7,5 @@ server/data
 dev
 backups
 livekit.yaml
+.env.local
+livekit.local.yaml
